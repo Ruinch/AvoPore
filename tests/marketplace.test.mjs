@@ -172,6 +172,34 @@ test("AvoPore marketplace transactions", async (t) => {
     assert.equal(await rpc(db, "token_balance", id), 0);
   });
 
+  await t.test("hosted demo members have separate balances and bookings", async () => {
+    const members = [randomUUID(), randomUUID()];
+    for (const id of members) {
+      const email = `member-${id}@demo.avopore.invalid`;
+      await db.query("insert into auth.users (id, email, raw_user_meta_data) values ($1, $2, $3)", [
+        id, email, JSON.stringify({ full_name: "Demo Member" }),
+      ]);
+      assert.deepEqual(await one(db, `
+        select p.email, p.role, p.studio_id, c.user_id as credential
+        from public.profiles p left join public.demo_credentials c on c.user_id = p.id
+        where p.id = $1
+      `, [id]), { email, role: "member", studio_id: null, credential: null });
+      assert.equal(await rpc(db, "token_balance", id), 0);
+    }
+
+    const [first, second] = members;
+    await issue(db, first);
+    const template = await createTemplate(db);
+    const session = await createSession(db, template.id, "3 days");
+    const booking = await rpc(db, "book_session", first, session, randomUUID());
+    assert.equal(booking.created, true);
+    assert.equal(await rpc(db, "token_balance", first), 4);
+    assert.equal(await rpc(db, "token_balance", second), 0);
+    const { rows: otherBookings } = await db.query("select id from public.bookings where member_id = $1", [second]);
+    assert.deepEqual(otherBookings, []);
+    await assert.rejects(rpc(db, "cancel_booking", second, booking.booking_id), /BOOKING_NOT_FOUND/);
+  });
+
   await t.test("local sign-up creates the profile and password credential together", async () => {
     const id = randomUUID();
     const result = await one(db, `

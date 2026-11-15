@@ -106,7 +106,7 @@ export async function bookAction(form: FormData) {
     const [existing] = await query<{ status: string }>("SELECT status FROM public.bookings WHERE id = $1 AND member_id = $2", [booking.booking_id, user.id]);
     if (existing?.status.startsWith("cancelled")) redirect(`${detail}&error=BOOKING_ALREADY_CANCELLED`);
   }
-  if (booking.created) {
+  if (booking.created && !user.isHostedDemo) {
     try {
       const slot = await getSession(session);
       if (slot) await sendBookingConfirmation({

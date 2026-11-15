@@ -13,6 +13,7 @@ export type AppUser = {
   name: string;
   role: 'member' | 'studio_owner' | 'studio_staff' | 'admin';
   studioId: string | null;
+  isHostedDemo?: boolean;
 };
 
 const demoCookie = 'avopore_demo_session';
@@ -25,9 +26,34 @@ const demoUsers = {
 const hashPassword = promisify(scrypt);
 const localState = globalThis as typeof globalThis & { avoporeSessionKey?: Buffer };
 
+export function isHostedMemberDemo() {
+  return Boolean(process.env.DATABASE_URL)
+    && process.env.AVOPORE_SIMULATE_PAYMENTS === '1'
+    && !process.env.STRIPE_SECRET_KEY
+    && !process.env.STRIPE_WEBHOOK_SECRET;
+}
+
+export function isDemoSignInAvailable() {
+  return isLocalDemo() || isHostedMemberDemo();
+}
+
 function demoSignature(payload: string) {
+  if (isHostedMemberDemo() && process.env.DATABASE_URL) {
+    const secret = process.env.AVOPORE_DEMO_SESSION_SECRET || process.env.DATABASE_URL;
+    return createHmac('sha256', secret).update('avopore:hosted-demo-member:v1:' + payload).digest();
+  }
   const secret = process.env.AVOPORE_DEMO_SESSION_SECRET || (localState.avoporeSessionKey ??= randomBytes(32));
   return createHmac('sha256', secret).update(payload).digest();
+}
+
+function hostedDemoEmail(id: string) {
+  return 'member-' + id + '@demo.avopore.invalid';
+}
+
+async function getHostedDemoMember(id: string) {
+  const profile = await getProfile(id);
+  if (profile?.email !== hostedDemoEmail(id) || profile.role !== 'member' || profile.studioId !== null) return null;
+  return { ...profile, isHostedDemo: true };
 }
 
 async function rememberDemoUser(id: string) {
@@ -57,6 +83,11 @@ export const getCurrentUser = cache(async function getCurrentUser(): Promise<App
   if (isLocalDemo()) {
     const id = readDemoId(jar.get(demoCookie)?.value);
     return id ? getProfile(id) : null;
+  }
+
+  if (isHostedMemberDemo()) {
+    const id = readDemoId(jar.get(demoCookie)?.value);
+    if (id) return getHostedDemoMember(id);
   }
 
   const token = jar.get(authCookies.access)?.value;
@@ -99,6 +130,7 @@ function normalizeEmail(email: string) {
 async function rememberSupabaseSession(value: unknown) {
   if (!isAuthSession(value)) return false;
   const jar = await cookies();
+  jar.set(demoCookie, '', authCookieOptions(0));
   for (const item of authSessionCookies(value)) jar.set(item.name, item.value, item.options);
   return true;
 }
@@ -208,7 +240,21 @@ export async function completeSupabaseEmailVerification(tokenHash: string) {
 }
 
 export async function signInDemo(role: keyof typeof demoUsers | 'studio_owner') {
-  if (!isLocalDemo()) throw new Error('Demo accounts are only available in local demo mode.');
+  if (!isLocalDemo()) {
+    if (role !== 'member' || !isHostedMemberDemo()) throw new Error('This demo account is unavailable.');
+    const jar = await cookies();
+    const existing = readDemoId(jar.get(demoCookie)?.value);
+    if (existing && await getHostedDemoMember(existing)) return;
+    const id = randomUUID();
+    await query(
+      'INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES ($1, $2, $3::jsonb)',
+      [id, hostedDemoEmail(id), JSON.stringify({ full_name: 'Demo Member' })],
+    );
+    jar.set(authCookies.access, '', authCookieOptions(0));
+    jar.set(authCookies.refresh, '', authCookieOptions(0));
+    await rememberDemoUser(id);
+    return;
+  }
   const key = role === 'studio_owner' ? 'studio' : role;
   if (!Object.hasOwn(demoUsers, key)) throw new Error('This demo account is unavailable.');
   const id = demoUsers[key];
