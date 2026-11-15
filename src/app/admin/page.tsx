@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { SubmitButton } from '@/components/submit-button'
 import { requireUser } from '@/lib/auth'
 import { dollars } from '@/lib/catalog'
@@ -83,6 +84,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     <div className="shell py-10 sm:py-14">
       <header className="mb-8">
         <h1 className="display text-4xl sm:text-6xl">Admin dashboard</h1>
+        <Link className="text-link mt-3" href="/owner">Owner dashboard</Link>
       </header>
 
       {(!bookingId || !bookings.some((booking) => booking.id === bookingId)) && notice}

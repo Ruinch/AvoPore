@@ -15,6 +15,7 @@ export function SessionCard({ session, eager = false }: { session: CatalogSessio
       <div className="card-meta"><span>{formatDay(session.starts_at, session.timezone)} · {formatTime(session.starts_at, session.timezone)}</span><span className="token-pill">{session.token_cost} tokens</span></div>
       <h3><Link href={`/discover/${session.slug}?session=${session.id}`}>{session.title}</Link></h3>
       <p><MapPin size={14} aria-hidden /> {session.studio_name} · {session.neighborhood}</p>
+      <p className="mt-2 text-sm font-semibold">{session.spots > 0 ? `${session.spots} ${session.spots === 1 ? "seat" : "seats"} left` : "Sold out"}</p>
     </div>
   </article>;
 }

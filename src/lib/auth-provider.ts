@@ -2,6 +2,7 @@ export const authCookies = {
   access: 'avopore_access',
   refresh: 'avopore_refresh',
   verifier: 'avopore_pkce',
+  returnPath: 'avopore_auth_return',
 } as const;
 
 export type AuthSession = {

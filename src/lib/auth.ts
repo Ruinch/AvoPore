@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { cache } from 'react';
 import { authCookieOptions, authCookies, authSessionCookies, isAuthSession, supabaseAuthConfig, supabaseAuthRequest } from './auth-provider';
+import { authCallbackUrl, safeReturnPath } from './auth-navigation';
 import { isLocalDemo, query } from './db';
 
 export type AppUser = {
@@ -102,11 +103,21 @@ async function rememberSupabaseSession(value: unknown) {
   return true;
 }
 
-async function createPkce() {
+async function createPkce(next: string) {
   const verifier = randomBytes(32).toString('base64url');
   const challenge = createHash('sha256').update(verifier).digest('base64url');
-  (await cookies()).set(authCookies.verifier, verifier, authCookieOptions(30 * 60));
+  const jar = await cookies();
+  const options = authCookieOptions(30 * 60);
+  jar.set(authCookies.verifier, verifier, options);
+  jar.set(authCookies.returnPath, safeReturnPath(next) ?? '/discover', options);
   return { code_challenge: challenge, code_challenge_method: 's256' } as const;
+}
+
+export async function consumeAuthReturnPath() {
+  const jar = await cookies();
+  const next = safeReturnPath(jar.get(authCookies.returnPath)?.value);
+  jar.set(authCookies.returnPath, '', authCookieOptions(0));
+  return next;
 }
 
 export async function signIn(email: string, password: string) {
@@ -130,7 +141,7 @@ export async function signIn(email: string, password: string) {
   if (!response.ok || !await rememberSupabaseSession(await response.json())) throw new Error(message);
 }
 
-export async function signUp(email: string, password: string, name: string, origin: string): Promise<'signed-in' | 'confirm-email'> {
+export async function signUp(email: string, password: string, name: string, origin: string, next: string): Promise<'signed-in' | 'confirm-email'> {
   const address = normalizeEmail(email);
   const fullName = name.trim();
   if (!fullName || fullName.length > 80) throw new Error('Enter a name between 1 and 80 characters.');
@@ -153,9 +164,9 @@ export async function signUp(email: string, password: string, name: string, orig
     return 'signed-in';
   }
 
-  const callback = `${resolveAppOrigin(origin)}/auth/callback`;
+  const callback = authCallbackUrl(resolveAppOrigin(origin), next);
   const response = await supabaseAuthRequest(`/signup?${new URLSearchParams({ redirect_to: callback })}`, {
-    body: { email: address, password, data: { full_name: fullName }, ...await createPkce() },
+    body: { email: address, password, data: { full_name: fullName }, ...await createPkce(next) },
   });
   if (!response.ok) throw new Error('We couldn’t create your account. Check your details and try again.');
   return await rememberSupabaseSession(await response.json()) ? 'signed-in' : 'confirm-email';
@@ -165,14 +176,14 @@ export function isGoogleAuthAvailable() {
   return !isLocalDemo() && Boolean(supabaseAuthConfig());
 }
 
-export async function signInWithGoogle(origin: string) {
+export async function signInWithGoogle(origin: string, next: string) {
   const config = supabaseAuthConfig();
   if (!config || !isGoogleAuthAvailable()) throw new Error('Google sign-in is unavailable.');
   const authorize = new URL('/auth/v1/authorize', config.url);
   authorize.search = new URLSearchParams({
     provider: 'google',
-    redirect_to: `${resolveAppOrigin(origin)}/auth/callback`,
-    ...await createPkce(),
+    redirect_to: authCallbackUrl(resolveAppOrigin(origin), next),
+    ...await createPkce(next),
   }).toString();
   return authorize.toString();
 }

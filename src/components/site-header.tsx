@@ -15,6 +15,7 @@ export async function SiteHeader() {
       <nav aria-label="Main navigation">
         <Link href="/discover">Workshops</Link>
         <Link href="/membership">Membership</Link>
+        {user?.role === "admin" && <Link href="/owner">Owner</Link>}
       </nav>
       <div className="nav-actions">
         {user?.role === "admin" && <Link href="/admin">Admin</Link>}

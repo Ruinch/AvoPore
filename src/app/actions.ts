@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireUser, signIn, signInDemo, signInWithGoogle, signOut, signUp } from "@/lib/auth";
+import { loginPath, membershipPlanCodes, safeReturnPath } from "@/lib/auth-navigation";
 import { createBillingPortal, createCheckout, getBillingMode, simulateCheckout } from "@/lib/billing";
 import { getSession } from "@/lib/catalog";
 import { query, rpc } from "@/lib/db";
@@ -13,7 +14,7 @@ import { errorCode } from "@/lib/messages";
 
 const credentials = z.object({ email: z.email().max(254), password: z.string().min(8).max(128) });
 const bookingInput = z.object({ session: z.uuid(), request: z.uuid(), slug: z.string().regex(/^[a-z0-9-]{1,100}$/) });
-const plans = z.enum(["starter", "studio", "collective"]);
+const plans = z.enum(membershipPlanCodes);
 
 async function siteOrigin() {
   if (process.env.APP_URL) return new URL(process.env.APP_URL).origin;
@@ -23,42 +24,40 @@ async function siteOrigin() {
   throw new Error("APP_URL is required on a hosted deployment.");
 }
 
-function nextDestination(value: FormDataEntryValue | null) {
-  return value === "/membership" || value === "/discover" ? value : "/account";
-}
-
 export async function loginAction(form: FormData) {
   const input = credentials.safeParse({ email: form.get("email"), password: form.get("password") });
-  const next = nextDestination(form.get("next"));
-  if (!input.success) redirect(`/login?error=INVALID_DATA&next=${encodeURIComponent(next)}`);
+  const next = safeReturnPath(form.get("next")) ?? "/account";
+  if (!input.success) redirect(loginPath(next, { error: "INVALID_DATA" }));
   try { await signIn(input.data.email, input.data.password); }
-  catch { redirect(`/login?error=SIGN_IN_FAILED&next=${encodeURIComponent(next)}`); }
+  catch { redirect(loginPath(next, { error: "SIGN_IN_FAILED" })); }
   redirect(next);
 }
 
 export async function signupAction(form: FormData) {
   const input = credentials.extend({ name: z.string().trim().min(2).max(80) }).safeParse({ email: form.get("email"), password: form.get("password"), name: form.get("name") });
-  const next = nextDestination(form.get("next"));
-  if (!input.success) redirect(`/login?mode=signup&error=INVALID_DATA&next=${encodeURIComponent(next)}`);
+  const next = safeReturnPath(form.get("next")) ?? "/account";
+  if (!input.success) redirect(loginPath(next, { mode: "signup", error: "INVALID_DATA" }));
   let status: string;
-  try { status = await signUp(input.data.email, input.data.password, input.data.name, await siteOrigin()); }
-  catch { redirect(`/login?mode=signup&error=SIGN_UP_FAILED&next=${encodeURIComponent(next)}`); }
-  redirect(status === "confirm-email" ? "/login?status=check-email" : next);
+  try { status = await signUp(input.data.email, input.data.password, input.data.name, await siteOrigin(), next); }
+  catch { redirect(loginPath(next, { mode: "signup", error: "SIGN_UP_FAILED" })); }
+  redirect(status === "confirm-email" ? loginPath(next, { status: "check-email" }) : next);
 }
 
-export async function googleAction() {
+export async function googleAction(form: FormData) {
+  const next = safeReturnPath(form.get("next")) ?? "/discover";
   let destination: string;
-  try { destination = await signInWithGoogle(await siteOrigin()); }
-  catch { redirect("/login?error=GOOGLE_FAILED"); }
+  try { destination = await signInWithGoogle(await siteOrigin(), next); }
+  catch { redirect(loginPath(next, { error: "GOOGLE_FAILED" })); }
   redirect(destination);
 }
 
 export async function demoAction(form: FormData) {
   const role = z.enum(["member", "studio", "admin"]).safeParse(form.get("role"));
   if (!role.success) redirect("/login?error=INVALID_DATA");
+  const next = safeReturnPath(form.get("next")) ?? "/discover";
   try { await signInDemo(role.data); }
-  catch { redirect("/login?error=SIGN_IN_FAILED"); }
-  redirect(role.data === "member" ? "/discover" : `/${role.data}`);
+  catch { redirect(loginPath(next, { error: "SIGN_IN_FAILED" })); }
+  redirect(role.data === "member" ? next : `/${role.data}`);
 }
 
 export async function logoutAction() {
@@ -70,7 +69,7 @@ export async function checkoutAction(form: FormData) {
   const user = await requireUser("member");
   const plan = plans.safeParse(form.get("plan"));
   if (!plan.success) redirect("/membership?error=INVALID_DATA");
-  if (form.get("consent") !== "on") redirect("/membership?error=RENEWAL_REQUIRED");
+  if (form.get("consent") !== "on") redirect(`/membership?plan=${plan.data}&error=RENEWAL_REQUIRED`);
   let target: string;
   try {
     if (getBillingMode() === "demo") {
@@ -80,7 +79,7 @@ export async function checkoutAction(form: FormData) {
       target = await createCheckout(user, plan.data, await siteOrigin(), true);
     }
   } catch (error) {
-    redirect(`/membership?error=${encodeURIComponent(errorCode(error, "BILLING_UNAVAILABLE"))}`);
+    redirect(`/membership?plan=${plan.data}&error=${encodeURIComponent(errorCode(error, "BILLING_UNAVAILABLE"))}`);
   }
   revalidatePath("/account");
   redirect(target);
