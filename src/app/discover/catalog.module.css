@@ -36,6 +36,9 @@
 .applied a:hover { background: color-mix(in srgb, var(--rust) 13%, var(--white)); }
 .applied a.clear { color: var(--muted); background: transparent; text-decoration: underline; text-underline-offset: 3px; }
 
+.demo { margin-top: 1rem; color: var(--muted); font-size: .83rem; }
+.demo + .count { margin-top: .5rem; }
+
 .count {
   margin-block: clamp(1.35rem, 3vw, 2rem) .65rem;
   color: var(--muted);

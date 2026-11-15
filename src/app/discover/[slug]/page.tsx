@@ -38,7 +38,7 @@ export default async function Workshop({ params, searchParams }: {
   const map = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(session.address);
   const deadline = new Date(new Date(session.starts_at).getTime() - 24 * 60 * 60 * 1000);
   const detailPath = sessionHref(session);
-  const city = cityByName(session.city);
+  const city = cityByName(session.city, session.state_code ?? undefined);
   const catalogPath = city ? discoverHref(city.slug) : "/discover";
   const categoryPath = city ? discoverHref(city.slug, { category: session.category }) : "/discover?category=" + session.category;
   const photo = workshopPhoto(session.image_key);
@@ -55,7 +55,7 @@ export default async function Workshop({ params, searchParams }: {
       <div className={styles.layout}>
         <header className={styles.heading}>
           <h1 id="workshop-title">{session.title}</h1>
-          <p><strong>{session.studio_name}</strong><span aria-hidden="true"> · </span>{session.neighborhood}<span aria-hidden="true"> · </span>{session.city}</p>
+          <p><strong>{session.studio_name}</strong><span aria-hidden="true"> · </span>{session.neighborhood}<span aria-hidden="true"> · </span>{session.city}{session.state_code ? ", " + session.state_code : ""}</p>
         </header>
 
         <aside className={styles.reservation} aria-labelledby="booking-heading">

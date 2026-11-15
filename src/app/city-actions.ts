@@ -2,7 +2,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { cityBySlug, discoverHref } from "@/lib/cities";
+import { discoverHref, stateByCode } from "@/lib/cities";
 import { cityCookie } from "@/lib/city-preference";
 
 function field(form: FormData, name: string) {
@@ -10,8 +10,8 @@ function field(form: FormData, name: string) {
   return typeof value === "string" ? value : undefined;
 }
 
-export async function chooseCity(form: FormData) {
-  const city = cityBySlug(form.get("city"));
+export async function chooseState(form: FormData) {
+  const city = stateByCode(form.get("state"))?.cities[0];
   if (!city) return;
 
   (await cookies()).set(cityCookie, city.slug, {

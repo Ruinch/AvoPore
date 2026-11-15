@@ -5,5 +5,6 @@
       "path": "/api/cron/expire",
       "schedule": "0 8 * * *"
     }
-  ]
+  ],
+  "buildCommand": "npm run build && node scripts/prepare-hosted-catalog.mjs"
 }

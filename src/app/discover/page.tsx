@@ -3,8 +3,9 @@ import Link from "next/link";
 import { ArrowRight, X } from "lucide-react";
 import { categories, formatDay, formatTime, getSessions, seatsLabel, sessionHref, type CatalogSession } from "@/lib/catalog";
 import { CityPicker } from "@/components/city-picker";
-import { discoverHref, type DiscoverFilters } from "@/lib/cities";
+import { discoverHref, stateByCode, type DiscoverFilters } from "@/lib/cities";
 import { getBrowseCity } from "@/lib/city-preference";
+import { getBillingMode } from "@/lib/billing";
 import { workshopPhoto } from "@/lib/workshop-photos";
 import styles from "./catalog.module.css";
 
@@ -69,13 +70,14 @@ function WorkshopDates({ sessions, eager }: { sessions: CatalogSession[]; eager:
 export default async function Discover({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const params = await searchParams;
   const city = await getBrowseCity(params.city);
+  const state = stateByCode(city.region);
   const category = typeof params.category === "string" && Object.hasOwn(categories, params.category)
     ? params.category as keyof typeof categories
     : undefined;
   const date = readDate(params.date);
   const tokens = priceOptions.map(String).find((value) => value === params.tokens);
   const filters: DiscoverFilters = { category, date, tokens };
-  const sessions = await getSessions({ city: city.name, category, date, maxTokens: tokens ? Number(tokens) : undefined });
+  const sessions = await getSessions({ city: city.name, stateCode: city.region, category, date, maxTokens: tokens ? Number(tokens) : undefined });
   const workshops = groupWorkshops(sessions);
   const applied = [
     category && { key: "category", label: categories[category] },
@@ -86,7 +88,7 @@ export default async function Discover({ searchParams }: { searchParams: Promise
   return <section className={"shell " + styles.page} aria-labelledby="catalogue-title">
     <header className={styles.intro}>
       <h1 className="display" id="catalogue-title">Workshop calendar</h1>
-      <p>Pick a date at an independent studio in {city.name}.</p>
+      <p>Pick a date at an independent studio in {city.name}{state ? ", " + state.name : ""}.</p>
       <CityPicker city={city} surface="discover" filters={filters} />
     </header>
 
@@ -113,6 +115,7 @@ export default async function Discover({ searchParams }: { searchParams: Promise
       <li><Link href={discoverHref(city.slug)} className={styles.clear}>Clear filters</Link></li>
     </ul>}
 
+    {getBillingMode() === "demo" && <p className={styles.demo}>This demo uses fictional studios and workshop listings.</p>}
     <p className={styles.count}>
       {workshops.length} {workshops.length === 1 ? "workshop" : "workshops"}
       <span aria-hidden="true"> · </span><span className="sr-only"> across </span>

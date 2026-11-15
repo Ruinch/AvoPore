@@ -2,6 +2,7 @@ import { mkdir, readFile, readdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { PGlite } from "@electric-sql/pglite";
 import { Pool } from "pg";
+import { postgresConnectionOptions } from "./postgres-config.mjs";
 
 const globalDb = globalThis as typeof globalThis & {
   avoporePostgres?: Pool;
@@ -44,15 +45,22 @@ async function openDemo() {
         await tx.query("INSERT INTO public.local_migrations VALUES ($1)", [filename]);
       });
     }
-    const { rows: [seedStatus] } = await db.query<{ original_seeded: boolean; cities_seeded: boolean }>(`
+    const { rows: [seedStatus] } = await db.query<{
+      original_seeded: boolean; cities_seeded: boolean; national_seeded: boolean;
+    }>(`
       SELECT
         EXISTS (SELECT 1 FROM public.local_migrations WHERE name = 'local-demo-seed') AS original_seeded,
-        EXISTS (SELECT 1 FROM public.local_migrations WHERE name = 'local-demo-seed-cities') AS cities_seeded
+        EXISTS (SELECT 1 FROM public.local_migrations WHERE name = 'local-demo-seed-cities') AS cities_seeded,
+        EXISTS (SELECT 1 FROM public.local_migrations WHERE name = 'local-demo-seed-national') AS national_seeded
     `);
-    if (!seedStatus.cities_seeded) {
-      const seed = await readFile(join(process.cwd(), "supabase", "seed.sql"), "utf8");
+    if (!seedStatus.national_seeded) {
+      const seedsDir = join(process.cwd(), "supabase");
+      const [baseSeed, nationalSeed] = await Promise.all([
+        seedStatus.cities_seeded ? null : readFile(join(seedsDir, "seed.sql"), "utf8"),
+        readFile(join(seedsDir, "national-demo-seed.sql"), "utf8"),
+      ]);
       await db.transaction(async (tx) => {
-        await tx.exec(seed);
+        if (baseSeed) await tx.exec(baseSeed);
         if (!seedStatus.original_seeded) {
           await tx.exec(`
             INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
@@ -65,7 +73,9 @@ async function openDemo() {
             INSERT INTO public.local_migrations VALUES ('local-demo-seed');
           `);
         }
-        await tx.exec("INSERT INTO public.local_migrations VALUES ('local-demo-seed-cities')");
+        if (baseSeed) await tx.exec("INSERT INTO public.local_migrations VALUES ('local-demo-seed-cities')");
+        await tx.exec(nationalSeed);
+        await tx.exec("INSERT INTO public.local_migrations VALUES ('local-demo-seed-national')");
       });
     }
   } catch (error) {
@@ -86,13 +96,9 @@ export async function query<T>(sql: string, params: unknown[] = []): Promise<T[]
   }
   if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is required on a hosted deployment.");
   if (!globalDb.avoporePostgres) {
-    const connectionString = new URL(process.env.DATABASE_URL);
-    const local = ["localhost", "127.0.0.1", "[::1]"].includes(connectionString.hostname);
-    const ca = process.env.SUPABASE_DB_CA_CERT?.replaceAll("\\n", "\n");
-    if (ca) connectionString.searchParams.delete("sslmode");
     const pool = new Pool({
-      connectionString: connectionString.toString(), max: 4, connectionTimeoutMillis: 5000,
-      ssl: ca || !local ? { rejectUnauthorized: true, ca } : undefined,
+      ...postgresConnectionOptions(process.env.DATABASE_URL, process.env.SUPABASE_DB_CA_CERT),
+      max: 4, connectionTimeoutMillis: 5000,
     });
     pool.on("error", (error) => console.error("Idle database connection closed", { error: error.name }));
     globalDb.avoporePostgres = pool;
