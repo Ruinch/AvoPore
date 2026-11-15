@@ -10,6 +10,8 @@ AvoPore gives members monthly tokens they can use to book pottery, cooking, phot
 
 ### Try the member flow online
 
+Use **Member demo** on the login page; you do not need to enter an email, password, or payment card. This button is available when the hosted deployment has demo payment simulation enabled. If it is missing, use the local demo below and check the [deployment guide](docs/deployment.md).
+
 1. Open the [live demo](https://avopore.vercel.app/login) and choose **Member demo**.
 2. In **Membership**, choose **Studio**, check the consent box, and select **Simulate payment** to add **24 test tokens** at no cost.
 3. In **Workshops**, choose a state, select **Show workshops**, and book an upcoming session.
