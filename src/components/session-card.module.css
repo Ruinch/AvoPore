@@ -1,0 +1,21 @@
+.card { min-width: 0; border-block-end: 1px solid var(--line); }
+.link { display: block; height: 100%; }
+.image { position: relative; aspect-ratio: 3 / 2; overflow: hidden; border-radius: 4px; background: var(--sage); }
+.image img { object-fit: cover; }
+.copy { padding: .9rem 0 .95rem; }
+.category { margin-bottom: .25rem; color: var(--rust); font-size: .76rem; font-weight: 650; }
+.copy h3 {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: .6rem;
+  color: var(--ink);
+  font: 400 clamp(1.35rem, 2.3vw, 1.83rem)/1.08 var(--serif);
+  letter-spacing: -.023em;
+}
+.copy h3 svg { flex-shrink: 0; align-self: center; }
+.link:hover h3 { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+.context { color: var(--muted); font-size: .84rem; margin-top: .35rem; }
+.stats { display: flex; flex-wrap: wrap; gap: .35rem 1rem; margin-top: .65rem; font-size: .83rem; }
+.available { color: var(--muted); }
+.soldOut { color: var(--rust); }

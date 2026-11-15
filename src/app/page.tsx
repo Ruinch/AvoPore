@@ -1,39 +1,94 @@
-import { ArrowDownRight, ArrowRight, ArrowUpRight, CalendarDays, MapPin } from "lucide-react";
+import { ArrowDown, ArrowRight, ArrowUpRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { CityPicker } from "@/components/city-picker";
+import { discoverHref } from "@/lib/cities";
+import { getBrowseCity } from "@/lib/city-preference";
 import { SessionCard } from "@/components/session-card";
-import { categories, getSessions } from "@/lib/catalog";
+import { categories, getSessions, type CatalogSession } from "@/lib/catalog";
 import { workshopPhotos } from "@/lib/workshop-photos";
+import styles from "./home.module.css";
 
 export const dynamic = "force-dynamic";
 
-export default async function Home() {
-  const upcoming = await getSessions({ limit: 36 });
-  const picks = Object.keys(categories).flatMap((category) => upcoming.find((session) => session.category === category) ?? []).slice(0, 3);
-  return <>
-    <section className="hero shell" aria-labelledby="hero-title">
-      <div className="hero-copy">
-        <div className="location"><MapPin size={15} aria-hidden /> NEW YORK CITY</div>
-        <h1 id="hero-title">Make time to<br /> <em>make things.</em></h1>
-        <p>Get your hands dirty, try a new craft, and meet the people who make New York. One membership opens the door to independent studios across the city.</p>
-        <div className="hero-actions"><Link className="button button-primary" href="/discover">Explore workshops <ArrowUpRight size={17} aria-hidden /></Link><Link className="text-link" href="#how-it-works">How it works <ArrowDownRight size={16} aria-hidden /></Link></div>
-      </div>
-      <div className="hero-visual">
-        <Image src={workshopPhotos.hero.src} alt={workshopPhotos.hero.alt} fill priority sizes="(max-width: 760px) 95vw, 53vw" />
-        <Link href="/discover?category=ceramics" className="photo-caption"><span>Get your hands in clay</span><ArrowUpRight size={16} aria-hidden /></Link>
-      </div>
-    </section>
+export default async function Home({ searchParams }: { searchParams: Promise<{ city?: string | string[] }> }) {
+  const city = await getBrowseCity((await searchParams).city);
+  const upcoming = await getSessions({ city: city.name, limit: 36 });
+  const picks = new Map<CatalogSession["category"], CatalogSession>();
+  for (const session of upcoming) {
+    if (!picks.has(session.category)) picks.set(session.category, session);
+    if (picks.size === 3) break;
+  }
 
-    <section className="workshop-section" aria-labelledby="workshops-title"><div className="shell">
-      <div className="section-head"><div><p className="eyebrow">Book a workshop</p><h2 className="display" id="workshops-title">Find your next thing.</h2></div>
-      <Link href="/discover" className="text-link">View all workshops <ArrowRight size={17} aria-hidden /></Link></div>
-      <div className="category-list"><Link href="/discover" className="category-link category-link-active">All workshops</Link>{Object.entries(categories).map(([id, name]) => <Link className="category-link" href={`/discover?category=${id}`} key={id}>{name}</Link>)}</div>
-      {picks.length ? <div className="card-grid">{picks.map((session) => <SessionCard key={session.id} session={session} />)}</div> : <p className="notice">New workshops are added as studios publish dates. Check back soon.</p>}
-    </div></section>
+  return (
+    <>
+      <section className={`shell ${styles.hero}`} aria-labelledby="hero-title">
+        <div className={styles.intro}>
+          <h1 id="hero-title">Creative workshops in {city.label}</h1>
+          <p>Book a seat at an independent studio. Try pottery, printmaking, weaving, and more with a monthly membership.</p>
+          <CityPicker city={city} surface="home" />
+          <div className={styles.actions}>
+            <Link className={`button button-primary ${styles.heroAction}`} href={discoverHref(city.slug)}>
+              Explore workshops <ArrowRight size={17} aria-hidden />
+            </Link>
+            <Link className={styles.inlineLink} href="#how-it-works">
+              How membership works <ArrowDown size={15} aria-hidden />
+            </Link>
+          </div>
+        </div>
+        <figure className={styles.figure}>
+          <div className={styles.photo}>
+            <Image
+              src={workshopPhotos.hero.src}
+              alt={workshopPhotos.hero.alt}
+              fill
+              priority
+              sizes="(max-width: 760px) calc(100vw - 32px), (max-width: 1300px) 57vw, 690px"
+            />
+          </div>
+          <figcaption className={styles.caption}>
+            <span>At the pottery wheel</span>
+            <Link className={styles.inlineLink} href={discoverHref(city.slug, { category: "ceramics" })}>
+              Explore ceramics <ArrowUpRight size={14} aria-hidden />
+            </Link>
+          </figcaption>
+        </figure>
+      </section>
 
-    <section className="how-section shell" id="how-it-works" aria-labelledby="how-title">
-      <div><p className="eyebrow">AvoPore membership</p><h2 className="display" id="how-title">From curious to hands-on.</h2><Link className="button button-secondary" href="/membership">See plans <ArrowUpRight size={16} aria-hidden /></Link></div>
-      <ol><li><h3>Pick a monthly plan</h3><p>Get a fresh batch of tokens every billing cycle.</p></li><li><h3>Spend tokens on workshops</h3><p>See the token price and available dates before booking.</p></li><li><h3>Show up and make something</h3><p><CalendarDays size={16} aria-hidden /> Your booking includes the materials listed by the studio.</p></li></ol>
-    </section>
-  </>;
+      <section className={`shell ${styles.workshops}`} aria-labelledby="workshops-title">
+        <header className={styles.sectionHeading}>
+          <h2 id="workshops-title">Upcoming workshops</h2>
+          <Link className={styles.inlineLink} href={discoverHref(city.slug)}>
+            See the full calendar <ArrowRight size={16} aria-hidden />
+          </Link>
+        </header>
+        <nav className={styles.categories} aria-label="Workshop categories">
+          <ul>
+            {Object.entries(categories).map(([id, name]) => (
+              <li key={id}><Link href={discoverHref(city.slug, { category: id })}>{name}</Link></li>
+            ))}
+          </ul>
+        </nav>
+        {picks.size ? (
+          <div className={styles.workshopGrid}>
+            {[...picks.values()].map((session) => <SessionCard key={session.id} session={session} />)}
+          </div>
+        ) : <p className={styles.empty}>The next workshop dates will appear here when studios publish them.</p>}
+      </section>
+
+      <section className={`shell ${styles.membership}`} id="how-it-works" aria-labelledby="how-title">
+        <div>
+          <h2 id="how-title">How membership works</h2>
+          <Link className={styles.inlineLink} href="/membership">
+            See membership plans <ArrowRight size={16} aria-hidden />
+          </Link>
+        </div>
+        <ol className={styles.steps}>
+          <li><h3>Choose a monthly plan</h3><p>Your plan sets the number of tokens you get each billing cycle.</p></li>
+          <li><h3>Book with tokens</h3><p>Pick a workshop date. The token cost is shown before you reserve your seat.</p></li>
+          <li><h3>Head to the studio</h3><p>Check the workshop listing for the address, materials, and what to bring.</p></li>
+        </ol>
+      </section>
+    </>
+  );
 }

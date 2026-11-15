@@ -44,21 +44,28 @@ async function openDemo() {
         await tx.query("INSERT INTO public.local_migrations VALUES ($1)", [filename]);
       });
     }
-    const { rows } = await db.query("SELECT 1 FROM public.local_migrations WHERE name = 'local-demo-seed'");
-    if (!rows.length) {
+    const { rows: [seedStatus] } = await db.query<{ original_seeded: boolean; cities_seeded: boolean }>(`
+      SELECT
+        EXISTS (SELECT 1 FROM public.local_migrations WHERE name = 'local-demo-seed') AS original_seeded,
+        EXISTS (SELECT 1 FROM public.local_migrations WHERE name = 'local-demo-seed-cities') AS cities_seeded
+    `);
+    if (!seedStatus.cities_seeded) {
       const seed = await readFile(join(process.cwd(), "supabase", "seed.sql"), "utf8");
       await db.transaction(async (tx) => {
         await tx.exec(seed);
-        await tx.exec(`
-          INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
-            ('00000000-0000-4000-8000-000000000001', 'member@avopore.example', '{"full_name":"Jamie Rivera"}'),
-            ('00000000-0000-4000-8000-000000000002', 'studio@avopore.example', '{"full_name":"Morgan Lee"}'),
-            ('00000000-0000-4000-8000-000000000003', 'admin@avopore.example', '{"full_name":"Alex Chen"}');
-          UPDATE public.profiles SET role = 'studio_owner', studio_id = (SELECT id FROM public.studios WHERE slug = 'clay-house')
-            WHERE id = '00000000-0000-4000-8000-000000000002';
-          UPDATE public.profiles SET role = 'admin' WHERE id = '00000000-0000-4000-8000-000000000003';
-          INSERT INTO public.local_migrations VALUES ('local-demo-seed');
-        `);
+        if (!seedStatus.original_seeded) {
+          await tx.exec(`
+            INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
+              ('00000000-0000-4000-8000-000000000001', 'member@avopore.example', '{"full_name":"Jamie Rivera"}'),
+              ('00000000-0000-4000-8000-000000000002', 'studio@avopore.example', '{"full_name":"Morgan Lee"}'),
+              ('00000000-0000-4000-8000-000000000003', 'admin@avopore.example', '{"full_name":"Alex Chen"}');
+            UPDATE public.profiles SET role = 'studio_owner', studio_id = (SELECT id FROM public.studios WHERE slug = 'clay-house')
+              WHERE id = '00000000-0000-4000-8000-000000000002';
+            UPDATE public.profiles SET role = 'admin' WHERE id = '00000000-0000-4000-8000-000000000003';
+            INSERT INTO public.local_migrations VALUES ('local-demo-seed');
+          `);
+        }
+        await tx.exec("INSERT INTO public.local_migrations VALUES ('local-demo-seed-cities')");
       });
     }
   } catch (error) {

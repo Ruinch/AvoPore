@@ -1,0 +1,268 @@
+/* A catalogue cover, the next dates, and the membership instructions. */
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, .82fr) minmax(0, 1.18fr);
+  align-items: center;
+  gap: clamp(32px, 5vw, 72px);
+  padding-block: clamp(32px, 5vw, 65px) 39px;
+}
+
+.intro h1,
+.sectionHeading h2,
+.membership h2 {
+  margin: 0;
+  font-family: var(--serif);
+  font-weight: 400;
+  letter-spacing: -.04em;
+  text-wrap: balance;
+}
+
+.intro h1 {
+  max-width: 13ch;
+  font-size: clamp(3rem, 5.65vw, 5.4rem);
+  line-height: .98;
+}
+
+.intro > p {
+  max-width: 42ch;
+  margin-block: 20px 23px;
+  color: var(--muted);
+  font-size: clamp(1rem, 1.17vw, 1.12rem);
+  line-height: 1.65;
+}
+
+.intro form { margin-bottom: 16px; }
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 18px;
+}
+
+.heroAction {
+  min-height: 46px;
+  border-radius: 4px;
+  background: var(--rust);
+}
+
+.heroAction:hover {
+  background: var(--rust-hover);
+}
+
+.inlineLink {
+  display: inline-flex;
+  min-height: 44px;
+  width: fit-content;
+  align-items: center;
+  gap: 7px;
+  font-size: .86rem;
+  font-weight: 650;
+  text-decoration: underline;
+  text-decoration-color: var(--line);
+  text-underline-offset: 4px;
+}
+
+.inlineLink svg {
+  flex-shrink: 0;
+}
+
+.inlineLink:hover {
+  color: var(--rust);
+  text-decoration-color: currentColor;
+}
+
+.figure {
+  min-width: 0;
+  margin: 0;
+}
+
+.photo {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 1.48;
+  border-radius: 3px;
+  background: #ceb196;
+}
+
+.photo img {
+  object-fit: cover;
+  object-position: 50% 54%;
+}
+
+.caption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: .81rem;
+}
+
+.caption .inlineLink {
+  color: var(--ink);
+  font-size: .81rem;
+}
+
+.caption .inlineLink:hover {
+  color: var(--rust);
+}
+
+.workshops {
+  padding-block: 31px 47px;
+  border-top: 1px solid var(--line);
+}
+
+.sectionHeading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 16px;
+}
+
+.sectionHeading h2,
+.membership h2 {
+  font-size: clamp(2.15rem, 4.4vw, 3.65rem);
+  line-height: 1.03;
+}
+
+.categories {
+  border-bottom: 1px solid var(--line);
+  margin-block: 8px 20px;
+}
+
+.categories ul {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: clamp(14px, 3vw, 27px);
+}
+
+.categories a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--muted);
+  font-size: .88rem;
+  font-weight: 550;
+  text-underline-offset: 4px;
+}
+
+.categories a:hover {
+  color: var(--rust);
+  text-decoration: underline;
+}
+
+.workshopGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(12px, 2vw, 24px);
+}
+
+.empty {
+  margin-block: 12px;
+  color: var(--muted);
+}
+
+.membership {
+  display: grid;
+  grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr);
+  gap: clamp(24px, 5vw, 72px);
+  padding-block: 35px 60px;
+  border-top: 1px solid var(--line);
+  scroll-margin-top: 84px;
+}
+
+.membership h2 {
+  max-width: 13ch;
+}
+
+.membership .inlineLink {
+  margin-top: 6px;
+}
+
+.steps {
+  margin: 0;
+  padding-left: 1.4rem;
+  list-style: decimal;
+}
+
+.steps li {
+  padding: 10px 0 12px 3px;
+  border-bottom: 1px solid var(--line);
+}
+
+.steps li:first-child {
+  padding-top: 0;
+}
+
+.steps li::marker {
+  color: var(--rust);
+  font-size: .84rem;
+  font-weight: 650;
+}
+
+.steps h3 {
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.steps p {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: .91rem;
+  line-height: 1.48;
+}
+
+@media (max-width: 920px) {
+  .hero {
+    gap: 24px;
+  }
+}
+
+@media (max-width: 760px) {
+  .hero {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 22px;
+    padding-block: 26px 28px;
+  }
+
+  .intro h1 {
+    max-width: none;
+    font-size: clamp(2.5rem, 9.9vw, 4.3rem);
+  }
+
+  .intro > p {
+    margin-block: 14px 16px;
+  }
+
+  .photo {
+    aspect-ratio: 1.51;
+  }
+
+  .workshops {
+    padding-block: 25px 35px;
+  }
+
+  .workshopGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px 12px;
+  }
+
+  .membership {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 15px;
+    padding-block: 27px 37px;
+  }
+
+  .membership h2 {
+    max-width: none;
+  }
+}
+
+@media (max-width: 500px) {
+  .workshopGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

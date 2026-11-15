@@ -10,7 +10,7 @@ import { dateTimeInputValue, formatSessionTime } from './local-time'
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Studio dashboard' }
 
-type Studio = { name: string; neighborhood: string }
+type Studio = { name: string; neighborhood: string; city: string; timezone: string }
 type Template = { id: string; title: string }
 type Session = {
   id: string
@@ -52,7 +52,7 @@ export default async function StudioPage({ searchParams }: { searchParams: Promi
   const { session: sessionId, feedback } = await searchParams
   const params = [user.studioId]
   const [[studio], templates, sessions, [statement]] = await Promise.all([
-    query<Studio>('select name, neighborhood from studios where id = $1', params),
+    query<Studio>('select name, neighborhood, city, timezone from public.studios where id = $1', params),
     query<Template>('select id, title from class_templates where studio_id = $1 order by title', params),
     query<Session>(`
       select s.id, t.title, s.starts_at, s.status, s.capacity, s.quota, s.booked_count
@@ -94,7 +94,7 @@ export default async function StudioPage({ searchParams }: { searchParams: Promi
       <header className="mb-8">
         <p className="eyebrow">Studio dashboard</p>
         <h1 className="display mt-2 text-4xl sm:text-6xl">{studio?.name ?? 'Your studio'}</h1>
-        {studio && <p className="muted mt-3">{studio.neighborhood} · New York</p>}
+        {studio && <p className="muted mt-3">{studio.neighborhood} · {studio.city}</p>}
       </header>
 
       <section aria-label="Payout statement" className="panel mb-8 grid grid-cols-2 gap-5 p-5 sm:grid-cols-3 sm:items-center sm:p-7">
@@ -118,7 +118,7 @@ export default async function StudioPage({ searchParams }: { searchParams: Promi
         <div className="grid gap-6">
           <section className="panel p-5 sm:p-7" aria-labelledby="publish-heading">
             <h2 id="publish-heading" className="display text-3xl">Publish a session</h2>
-            {templates.length === 0 ? <p className="muted mt-4">Your studio has no class templates yet.</p> : (
+            {!studio || templates.length === 0 ? <p className="muted mt-4">Your studio has no class templates yet.</p> : (
               <form action={createSession} className="mt-5 grid gap-4">
                 <div className="field">
                   <label htmlFor="studio-template">Class</label>
@@ -128,8 +128,8 @@ export default async function StudioPage({ searchParams }: { searchParams: Promi
                   </select>
                 </div>
                 <label className="field">
-                  Starts at (New York time)
-                  <input name="startsAt" type="datetime-local" min={dateTimeInputValue(new Date(now))} required />
+                  Starts at ({studio.city} time)
+                  <input name="startsAt" type="datetime-local" min={dateTimeInputValue(new Date(now), studio.timezone)} required />
                 </label>
                 <div className="grid grid-cols-2 gap-3">
                   <label className="field">
@@ -161,7 +161,7 @@ export default async function StudioPage({ searchParams }: { searchParams: Promi
                     >
                       <span>
                         <span className="block text-sm font-semibold">{session.title}</span>
-                        <span className="muted mt-1 block text-sm">{formatSessionTime(session.starts_at)}</span>
+                        <span className="muted mt-1 block text-sm">{formatSessionTime(session.starts_at, studio?.timezone)}</span>
                       </span>
                       <span className="shrink-0 text-sm tabular-nums">
                         {session.status === 'cancelled' ? 'Cancelled' : `${session.booked_count}/${session.quota} booked`}
@@ -180,7 +180,7 @@ export default async function StudioPage({ searchParams }: { searchParams: Promi
           {selected ? (
             <>
               <p className="mt-2 text-lg font-semibold">{selected.title}</p>
-              <p className="muted mt-1 text-sm">{formatSessionTime(selected.starts_at)} · {selected.booked_count} of {selected.quota} AvoPore spots booked</p>
+              <p className="muted mt-1 text-sm">{formatSessionTime(selected.starts_at, studio?.timezone)} · {selected.booked_count} of {selected.quota} AvoPore spots booked</p>
 
               {quotaEditable && (
                 <form key={`${selected.id}:${selected.quota}`} action={updateQuota} className="my-5 flex flex-wrap items-end gap-3 border-y border-[#172c24]/15 py-4">

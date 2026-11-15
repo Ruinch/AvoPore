@@ -1,21 +1,28 @@
-import { ArrowUpRight, MapPin } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { categories, formatDay, formatTime, type CatalogSession } from "@/lib/catalog";
+import { categories, formatDay, formatTime, seatsLabel, sessionHref, type CatalogSession } from "@/lib/catalog";
 import { workshopPhoto } from "@/lib/workshop-photos";
+import styles from "./session-card.module.css";
 
 export function SessionCard({ session, eager = false }: { session: CatalogSession; eager?: boolean }) {
-  return <article className="session-card">
-    <Link href={`/discover/${session.slug}?session=${session.id}`} className="card-image" aria-label={`View ${session.title}`}>
-      <Image src={workshopPhoto(session.image_key).src} alt="" fill loading={eager ? "eager" : "lazy"} sizes="(max-width: 640px) 100vw, (max-width: 1000px) 50vw, 360px" />
-      <span className="card-category">{categories[session.category] ?? session.category}</span>
-      <span className="card-arrow" aria-hidden><ArrowUpRight size={19} /></span>
+  return <article className={styles.card}>
+    <Link href={sessionHref(session)} className={styles.link}>
+      <div className={styles.image}>
+        <Image src={workshopPhoto(session.image_key).src} alt="" fill loading={eager ? "eager" : "lazy"}
+          sizes="(max-width: 480px) 100vw, (max-width: 780px) 50vw, 380px" />
+      </div>
+      <div className={styles.copy}>
+        <p className={styles.category}>{categories[session.category] ?? session.category}</p>
+        <h3>{session.title}<ArrowRight size={17} strokeWidth={1.7} aria-hidden /></h3>
+        <p className={styles.context}>{session.studio_name} · {session.neighborhood}</p>
+        <p className={styles.context}><time dateTime={new Date(session.starts_at).toISOString()}>
+          {formatDay(session.starts_at, session.timezone)} · {formatTime(session.starts_at, session.timezone)}
+        </time></p>
+        <p className={styles.stats}><strong>{session.token_cost} tokens</strong>
+          <span className={session.spots ? styles.available : styles.soldOut}>{seatsLabel(session.spots)}</span>
+        </p>
+      </div>
     </Link>
-    <div className="card-body">
-      <div className="card-meta"><span>{formatDay(session.starts_at, session.timezone)} · {formatTime(session.starts_at, session.timezone)}</span><span className="token-pill">{session.token_cost} tokens</span></div>
-      <h3><Link href={`/discover/${session.slug}?session=${session.id}`}>{session.title}</Link></h3>
-      <p><MapPin size={14} aria-hidden /> {session.studio_name} · {session.neighborhood}</p>
-      <p className="mt-2 text-sm font-semibold">{session.spots > 0 ? `${session.spots} ${session.spots === 1 ? "seat" : "seats"} left` : "Sold out"}</p>
-    </div>
   </article>;
 }

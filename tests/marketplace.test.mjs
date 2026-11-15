@@ -78,14 +78,19 @@ test("AvoPore marketplace transactions", async (t) => {
   await db.exec(await readFile(migration, "utf8"));
   await db.exec(await readFile(seed, "utf8"));
 
-  await t.test("the seed provides five studios, published dates and the three membership tiers", async () => {
-    const count = await one(db, `
-      select
-        (select count(*)::int from public.studios) as studios,
-        (select count(*)::int from public.sessions where status = 'published' and starts_at > now()) as sessions
+  await t.test("the seed provides three cities, published dates and the three membership tiers", async () => {
+    const { rows: cities } = await db.query(`
+      select d.city, d.timezone, count(distinct d.id)::int as studios, count(s.id)::int as sessions
+      from public.studios d
+      join public.class_templates c on c.studio_id = d.id
+      join public.sessions s on s.template_id = c.id and s.status = 'published' and s.starts_at > now()
+      group by d.city, d.timezone order by d.city
     `);
-    assert.equal(count.studios, 5);
-    assert.ok(count.sessions >= 15 && count.sessions <= 20, "expected 15–20 upcoming sessions");
+    assert.deepEqual(cities, [
+      { city: "Chicago", timezone: "America/Chicago", studios: 3, sessions: 6 },
+      { city: "Los Angeles", timezone: "America/Los_Angeles", studios: 3, sessions: 6 },
+      { city: "New York City", timezone: "America/New_York", studios: 5, sessions: 18 },
+    ]);
     const { rows: plans } = await db.query("select id, price_cents, tokens from public.plans order by price_cents");
     assert.deepEqual(plans, [
       { id: "starter", price_cents: 3900, tokens: 12 },
@@ -179,7 +184,7 @@ test("AvoPore marketplace transactions", async (t) => {
       assert.equal((await issue(db, member.id)).created, true);
       assert.equal(await rpc(db, "token_balance", member.id), 12);
       const report = await one(db, "select count(*)::int as studios from public.payout_report");
-      assert.equal(report.studios, 5);
+      assert.equal(report.studios, 11);
       await assert.rejects(db.query("delete from public.ledger_entries"), { code: "42501" });
     } finally {
       await db.exec("reset role");

@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { requireUser } from '@/lib/auth'
-import { rpc } from '@/lib/db'
+import { query, rpc } from '@/lib/db'
 import { studioFeedback } from './feedback'
 import { parseStudioDateTime } from './local-time'
 
@@ -37,14 +37,21 @@ export async function createSession(data: FormData) {
   const user = await requireUser('studio')
   const templateId = formId(data, 'templateId')
   const value = data.get('startsAt')
-  const startsAt = typeof value === 'string' ? parseStudioDateTime(value) : null
   const capacity = integer(data, 'capacity')
   const quota = integer(data, 'quota')
 
   if (!templateId) studioRedirect('TEMPLATE_NOT_FOUND')
-  if (!startsAt || startsAt.getTime() <= Date.now()) studioRedirect('INVALID_START_TIME')
+  if (typeof value !== 'string') studioRedirect('INVALID_START_TIME')
   if (capacity === null || capacity < 1 || capacity > 500) studioRedirect('INVALID_CAPACITY')
   if (quota === null || quota > capacity) studioRedirect('INVALID_QUOTA')
+
+  if (!user.studioId) studioRedirect('FORBIDDEN')
+  const [studio] = await query<{ timezone: string }>('select timezone from public.studios where id = $1', [user.studioId])
+    .catch(studioFailure)
+  if (!studio) studioRedirect('FORBIDDEN')
+
+  const startsAt = parseStudioDateTime(value, studio.timezone)
+  if (!startsAt || startsAt.getTime() <= Date.now()) studioRedirect('INVALID_START_TIME')
 
   let result: { session_id: string }
   try {

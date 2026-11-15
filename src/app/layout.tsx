@@ -14,8 +14,8 @@ const displayFont = localFont({
 });
 
 export const metadata: Metadata = {
-  title: { default: "AvoPore | Make something in New York", template: "%s | AvoPore" },
-  description: "Book beginner-friendly creative workshops at independent New York City studios with one flexible membership.",
+  title: { default: "AvoPore | Creative workshops near you", template: "%s | AvoPore" },
+  description: "Book beginner-friendly creative workshops at independent US studios with one flexible membership.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
