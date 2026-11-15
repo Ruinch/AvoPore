@@ -1,39 +1,49 @@
 # AvoPore
 
-AvoPore is a membership for in-person creative workshops. Members use monthly tokens to book classes at independent studios. The demo catalog includes a city in each of the 50 U.S. states, with fictional studios and bookable sample sessions.
+**One membership for hands-on creative workshops.**
 
-## Run locally
+AvoPore gives members monthly tokens they can use to book pottery, cooking, photography, and other classes at independent studios. Studios choose which sessions and how many seats to offer. They can track attendance and see the payout calculated for each attendee.
 
-Install Node.js 22 or newer with npm. From the repository root, run these two commands.
+[Open the live demo](https://avopore.vercel.app/discover?city=chicago) · [View a sample workshop](https://avopore.vercel.app/discover/pinch-pot-planters-chicago)
+
+## Judge walkthrough
+
+### Browse the live demo
+
+Open **Workshops**, pick a state, and select **Show workshops**. Open a listing to see its dates, available seats, token price, and cancellation policy. The catalog includes a city in each of the **50 U.S. states** and **nine workshop categories**. It uses fictional studios and sample schedules. You can browse as a guest.
+
+### Try the full booking flow locally
+
+With Node.js 22 or newer, run these commands in the repository root.
 
 ```sh
 npm ci
 npm run dev
 ```
 
-Open [http://127.0.0.1:3000](http://127.0.0.1:3000). The local demo includes sample workshops, demo accounts, and simulated checkout. You can start without an environment file, Docker, or provider accounts.
+Open [http://127.0.0.1:3000](http://127.0.0.1:3000). A local database, workshop schedule, and demo accounts load automatically.
 
-## Try a booking
+1. Select **Try the demo → Member demo**.
+2. In **Membership**, choose **Studio**, check the consent box, and select **Simulate payment**. A fresh checkout adds **24 demo tokens** at no cost.
+3. In **Workshops**, open an upcoming session and book a seat.
+4. In **My account**, confirm the booking and the remaining balance. Cancel a booking at least 24 hours before it starts to see its tokens return.
 
-1. Select **Try the demo** in the header, then **Member demo**.
-2. Open **Membership**, choose a plan, check the consent box, and select **Simulate payment**. If the demo member already has a plan, check their token balance in **My account**.
-3. Open **Workshops**, choose a state and an upcoming date, then book a seat. Dates and times follow the studio's time zone.
-4. Open **My account** to see the booking, remaining tokens, and expiry dates.
+Use **My account → Sign out** and return to **Try the demo** to try the other roles.
 
-To switch roles, use **My account → Sign out** and return to **Try the demo**.
-
-| Demo role | What to try |
+| Role | What to show |
 | --- | --- |
-| **Studio demo** | In **Studio**, publish a session, set the number of seats AvoPore can book, and open the attendee list. Check-in opens one hour before the session starts. |
-| **Admin demo** | In **Admin**, review bookings, issue a token refund, or see calculated studio payouts. In **Owner**, view activity and download a studio CSV. |
+| **Studio demo** | Publish a session, set how many seats AvoPore can book, and see the attendee list. Check-in opens one hour before the session starts. |
+| **Admin demo** | Review bookings, issue a token refund, and see calculated studio payouts. Open **Owner** to review booking activity and export a studio CSV. |
 
-## Demo data
+If the local schedule has expired, set `AVOPORE_DATA_DIR=.avopore-data-fresh` in `.env.local` and restart. Use a directory you haven't used before to load fresh dates.
 
-The app saves local bookings and accounts in `.avopore-data`. To open a fresh demo while keeping existing data, set `AVOPORE_DATA_DIR=.avopore-data-fresh` in `.env.local` and restart the server. Choose a directory you haven't used before.
+## Business model and pilot
 
-Seeded dates are relative to when the database was created. If they've passed, use **Studio demo** to publish a new session at Clay House in New York City, or open a fresh demo.
+Members buy a monthly token allowance. The planned Brooklyn pilot will test whether studios can fill quieter sessions at an agreed rate per attendee and whether members return for another workshop. We’ll measure repeat bookings, attendance, and margin after studio payouts. [U.S. pilot roadmap](docs/us-pilot-roadmap.md)
 
-## Checks
+## Technical implementation
+
+The app uses Next.js and TypeScript, with Supabase for hosted sign-in and PostgreSQL for data. The local demo uses PGlite, and the public demo runs on Vercel. Booking a seat and spending tokens happen in the same database transaction. Integration tests cover competition for the last seat, duplicate payment events, and refunds.
 
 ```sh
 npm test
@@ -41,12 +51,4 @@ npm run typecheck
 npm run build
 ```
 
-The tests use the project's SQL schema in a separate PGlite database.
-
-## More about the project
-
-- [Deployment guide](docs/deployment.md) for Vercel, Supabase, Stripe test payments, and email.
-- [Environment template](.env.example) for local options and hosting.
-- [U.S. pilot roadmap](docs/us-pilot-roadmap.md) for launch plans and studio economics.
-
-The Next.js app lives in [`src/app`](src/app), with migrations and demo data in [`supabase`](supabase) and integration tests in [`tests`](tests).
+[Deployment guide](docs/deployment.md) · [Environment template](.env.example) · [Integration tests](tests)
