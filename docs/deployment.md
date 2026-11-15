@@ -4,7 +4,9 @@ The hosted setup uses Vercel for the app, Supabase for PostgreSQL and sign-in, S
 
 ## 1. Set up the database
 
-Apply the [schema migration](../supabase/migrations/20261115000100_avopore.sql) using the Supabase SQL Editor or your migration workflow. For a hosted demo, also apply the [demo seed](../supabase/seed.sql). You can reapply the seed to add Chicago and Los Angeles to an older hosted demo while preserving existing sessions and bookings.
+Apply the [base schema](../supabase/migrations/20261115000100_avopore.sql) on a fresh project. For a manual or non-Vercel deployment, apply the [national catalog migration](../supabase/migrations/20261115000200_national_catalog.sql) before deploying the national catalog. Use the Supabase SQL Editor or your migration workflow.
+
+For a hosted demo, run the [base seed](../supabase/seed.sql) and then the [national seed](../supabase/national-demo-seed.sql). The national seed adds fictional workshops and sessions across all 50 states. You can rerun it to add future demo dates while keeping existing bookings. Vercel Production applies the national migration after a successful build. It refreshes the national demo seed only when checkout simulation is enabled and the Stripe variables are unset.
 
 ## 2. Deploy on Vercel
 

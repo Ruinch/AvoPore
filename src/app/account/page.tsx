@@ -11,7 +11,7 @@ import { errorMessage } from "@/lib/messages";
 export const metadata = { title: "My account" };
 export const dynamic = "force-dynamic";
 
-type Booking = { id: string; title: string; studio_name: string; studio_city: string; starts_at: Date | string; timezone: string; status: string; tokens_charged: number; refunded_tokens: number };
+type Booking = { id: string; title: string; studio_name: string; studio_city: string; studio_state: string | null; starts_at: Date | string; timezone: string; status: string; tokens_charged: number; refunded_tokens: number };
 type Activity = { id: string | number; amount: number; reason: string; created_at: Date | string };
 type Subscription = { name: string; status: string; period_end: Date | string; stripe_customer_id: string | null };
 type Grant = { expires_at: Date | string; remaining: number };
@@ -28,7 +28,7 @@ export default async function Account({ searchParams }: { searchParams: Promise<
 
   const [balance, bookings, [subscription], activity, grants] = await Promise.all([
     rpc<number>("token_balance", { p_member_id: user.id }),
-    query<Booking>(`SELECT b.id, t.title, st.name AS studio_name, st.city AS studio_city, s.starts_at, st.timezone, b.status, b.tokens_charged, b.refunded_tokens
+    query<Booking>(`SELECT b.id, t.title, st.name AS studio_name, st.city AS studio_city, st.state_code AS studio_state, s.starts_at, st.timezone, b.status, b.tokens_charged, b.refunded_tokens
       FROM public.bookings b JOIN public.sessions s ON s.id = b.session_id JOIN public.class_templates t ON t.id = s.template_id
       JOIN public.studios st ON st.id = t.studio_id WHERE b.member_id = $1 ORDER BY s.starts_at DESC LIMIT 60`, [user.id]),
     query<Subscription>(`SELECT p.name, sub.status, sub.period_end, sub.stripe_customer_id FROM public.subscriptions sub
@@ -53,7 +53,7 @@ export default async function Account({ searchParams }: { searchParams: Promise<
           const starts = new Date(booking.starts_at);
           const deadline = new Date(starts.valueOf() - 86_400_000);
           const canCancel = booking.status === "confirmed" && starts.valueOf() > Date.now();
-          return <li key={booking.id} className="panel booking-record"><div className="record-top"><div><h3>{booking.title}</h3><p>{booking.studio_name} · {booking.studio_city}</p></div><span className="token-pill">{bookingLabel[booking.status] ?? booking.status}</span></div>
+          return <li key={booking.id} className="panel booking-record"><div className="record-top"><div><h3>{booking.title}</h3><p>{booking.studio_name} · {booking.studio_city}{booking.studio_state ? ", " + booking.studio_state : ""}</p></div><span className="token-pill">{bookingLabel[booking.status] ?? booking.status}</span></div>
             <p className="record-date"><CalendarDays size={16} aria-hidden /> {formatDay(starts, booking.timezone)} · {formatTime(starts, booking.timezone, true)} · {booking.tokens_charged} tokens</p>
             {booking.refunded_tokens > 0 && <p className="muted">{booking.refunded_tokens} tokens returned</p>}
             {canCancel && <details className="cancel-details"><summary>Cancel booking</summary><p>{Date.now() <= deadline.valueOf() ? `Cancel by ${formatDay(deadline, booking.timezone)}, ${formatTime(deadline, booking.timezone, true)} for a full token refund.` : "The 24-hour deadline has passed. Cancelling will release your seat without a token refund."}</p><form action={cancelAction}><input type="hidden" name="booking" value={booking.id} /><SubmitButton secondary pendingText="Cancelling…">Confirm cancellation</SubmitButton></form></details>}

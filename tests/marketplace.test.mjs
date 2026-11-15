@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { test } from "node:test";
 import { PGlite } from "@electric-sql/pglite";
 
-const migration = new URL("../supabase/migrations/20261115000100_avopore.sql", import.meta.url);
+const migrations = new URL("../supabase/migrations/", import.meta.url);
 const seed = new URL("../supabase/seed.sql", import.meta.url);
+const nationalSeed = new URL("../supabase/national-demo-seed.sql", import.meta.url);
 
 async function one(db, sql, parameters = []) {
   const { rows } = await db.query(sql, parameters);
@@ -75,28 +76,93 @@ test("AvoPore marketplace transactions", async (t) => {
       raw_user_meta_data jsonb not null default '{}'::jsonb
     );
   `);
-  await db.exec(await readFile(migration, "utf8"));
+  for (const name of (await readdir(migrations)).filter((file) => file.endsWith(".sql")).sort()) {
+    await db.exec(await readFile(new URL(name, migrations), "utf8"));
+  }
   await db.exec(await readFile(seed, "utf8"));
+  await db.exec(await readFile(nationalSeed, "utf8"));
 
-  await t.test("the seed provides three cities, published dates and the three membership tiers", async () => {
-    const { rows: cities } = await db.query(`
-      select d.city, d.timezone, count(distinct d.id)::int as studios, count(s.id)::int as sessions
+  await t.test("the demo includes all 50 states with nine categories and four dates per workshop", async () => {
+    const { rows: locations } = await db.query(`
+      select d.state_code, d.city, d.timezone, count(distinct c.category)::int as categories,
+        count(distinct c.id)::int as workshops, count(s.id)::int as sessions,
+        min(s.starts_at) >= now() + interval '23 hours' as starts_soon,
+        min(s.starts_at) <= now() + interval '9 days' as starts_within_a_week,
+        max(s.starts_at) >= now() + interval '27 days' as dates_four_weeks_out
       from public.studios d
       join public.class_templates c on c.studio_id = d.id
       join public.sessions s on s.template_id = c.id and s.status = 'published' and s.starts_at > now()
-      group by d.city, d.timezone order by d.city
+      where d.slug like 'demo-workshop-lab-%'
+      group by d.state_code, d.city, d.timezone order by d.state_code
     `);
-    assert.deepEqual(cities, [
-      { city: "Chicago", timezone: "America/Chicago", studios: 3, sessions: 6 },
-      { city: "Los Angeles", timezone: "America/Los_Angeles", studios: 3, sessions: 6 },
-      { city: "New York City", timezone: "America/New_York", studios: 5, sessions: 18 },
-    ]);
+    assert.equal(locations.length, 50);
+    assert.equal(new Set(locations.map(({ state_code }) => state_code)).size, 50);
+    for (const location of locations) {
+      assert.equal(location.categories, 9, location.city);
+      assert.equal(location.workshops, 9, location.city);
+      assert.equal(location.sessions, 36, location.city);
+      assert.equal(location.starts_soon, true, location.city);
+      assert.equal(location.starts_within_a_week, true, location.city);
+      assert.equal(location.dates_four_weeks_out, true, location.city);
+    }
+    assert.equal(locations.find(({ city }) => city === "Anchorage").timezone, "America/Anchorage");
+    assert.equal(locations.find(({ city }) => city === "Honolulu").timezone, "Pacific/Honolulu");
+
+    const { rows: cookingSlots } = await db.query(`
+      select distinct to_char(s.starts_at at time zone d.timezone, 'HH24:MI') as local_time,
+        extract(isodow from s.starts_at at time zone d.timezone)::int as weekday
+      from public.studios d
+      join public.class_templates c on c.studio_id = d.id and c.category = 'cooking'
+      join public.sessions s on s.template_id = c.id
+    `);
+    assert.deepEqual(cookingSlots, [{ local_time: "18:30", weekday: 4 }]);
     const { rows: plans } = await db.query("select id, price_cents, tokens from public.plans order by price_cents");
     assert.deepEqual(plans, [
       { id: "starter", price_cents: 3900, tokens: 12 },
       { id: "studio", price_cents: 6900, tokens: 24 },
       { id: "collective", price_cents: 9900, tokens: 40 },
     ]);
+  });
+
+  await t.test("reapplying the rollout leaves existing fixture dates and bookings intact", async () => {
+    const member = await createProfile(db);
+    const fixtureId = "00000000-0000-4000-a000-000000000003";
+    await issue(db, member.id);
+    const booking = await rpc(db, "book_session", member.id, fixtureId, randomUUID());
+    const before = await one(db, `
+      select starts_at::text, capacity, quota, booked_count
+      from public.sessions where id = $1
+    `, [fixtureId]);
+    const { rows: existingSessions } = await db.query("select id from public.sessions order by id");
+
+    await db.exec(await readFile(nationalSeed, "utf8"));
+
+    const { rows: reappliedSessions } = await db.query("select id from public.sessions order by id");
+    assert.deepEqual(reappliedSessions, existingSessions);
+    const unchanged = await one(db, `
+      select starts_at::text, capacity, quota, booked_count
+      from public.sessions where id = $1
+    `, [fixtureId]);
+    assert.deepEqual(unchanged, before);
+    assert.deepEqual(await one(db, "select session_id, status from public.bookings where id = $1", [booking.booking_id]), {
+      session_id: fixtureId, status: "confirmed",
+    });
+  });
+
+  await t.test("a national demo workshop can be booked and refunded", async () => {
+    const member = await createProfile(db);
+    await issue(db, member.id);
+    const { id, token_cost } = await one(db, `
+      select s.id, c.token_cost from public.sessions s
+      join public.class_templates c on c.id = s.template_id and c.category = 'photography'
+      join public.studios d on d.id = c.studio_id and d.state_code = 'HI'
+      order by s.starts_at limit 1
+    `);
+    const booking = await rpc(db, "book_session", member.id, id, randomUUID());
+    assert.equal(booking.created, true);
+    assert.equal(await rpc(db, "token_balance", member.id), 12 - token_cost);
+    await rpc(db, "cancel_booking", member.id, booking.booking_id);
+    assert.equal(await rpc(db, "token_balance", member.id), 12);
   });
 
   await t.test("auth sign-up creates an unprivileged member and a zero balance", async () => {
@@ -184,7 +250,7 @@ test("AvoPore marketplace transactions", async (t) => {
       assert.equal((await issue(db, member.id)).created, true);
       assert.equal(await rpc(db, "token_balance", member.id), 12);
       const report = await one(db, "select count(*)::int as studios from public.payout_report");
-      assert.equal(report.studios, 11);
+      assert.equal(report.studios, 61);
       await assert.rejects(db.query("delete from public.ledger_entries"), { code: "42501" });
     } finally {
       await db.exec("reset role");

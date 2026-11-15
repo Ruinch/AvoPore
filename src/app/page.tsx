@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 
 export default async function Home({ searchParams }: { searchParams: Promise<{ city?: string | string[] }> }) {
   const city = await getBrowseCity((await searchParams).city);
-  const upcoming = await getSessions({ city: city.name, limit: 36 });
+  const upcoming = await getSessions({ city: city.name, stateCode: city.region, limit: 36 });
   const picks = new Map<CatalogSession["category"], CatalogSession>();
   for (const session of upcoming) {
     if (!picks.has(session.category)) picks.set(session.category, session);
@@ -25,7 +25,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
       <section className={`shell ${styles.hero}`} aria-labelledby="hero-title">
         <div className={styles.intro}>
           <h1 id="hero-title">Creative workshops in {city.label}</h1>
-          <p>Book a seat at an independent studio. Try pottery, printmaking, weaving, and more with a monthly membership.</p>
+          <p>Book a seat at an independent studio. Use a monthly membership to try pottery, photography, cooking, and more.</p>
           <CityPicker city={city} surface="home" />
           <div className={styles.actions}>
             <Link className={`button button-primary ${styles.heroAction}`} href={discoverHref(city.slug)}>

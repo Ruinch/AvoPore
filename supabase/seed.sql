@@ -1,29 +1,29 @@
 -- Fictional US studios and classes for the AvoPore demo.
 -- Safe to rerun: existing sessions keep their original dates and bookings.
-insert into public.studios (slug, name, neighborhood, address, description, city, timezone)
+insert into public.studios (slug, name, neighborhood, address, description, city, timezone, state_code)
 values
   ('clay-house', 'Clay House', 'Greenpoint', 'Greenpoint, Brooklyn, NY',
-    'A small ceramics studio with a working pottery wheel room and shelves full of test glazes.', 'New York City', 'America/New_York'),
+    'A small ceramics studio with a working pottery wheel room and shelves full of test glazes.', 'New York City', 'America/New_York', 'NY'),
   ('pull-press', 'Pull Press Studio', 'Bushwick', 'Bushwick, Brooklyn, NY',
-    'A print shop for hands-on workshops in paper, ink, and original editions.', 'New York City', 'America/New_York'),
+    'A print shop for hands-on workshops in paper, ink, and original editions.', 'New York City', 'America/New_York', 'NY'),
   ('common-thread', 'Common Thread', 'Long Island City', 'Long Island City, Queens, NY',
-    'An open textiles workshop with small looms, colorful yarn, and generous table space.', 'New York City', 'America/New_York'),
+    'An open textiles workshop with small looms, colorful yarn, and generous table space.', 'New York City', 'America/New_York', 'NY'),
   ('color-field', 'Color Field Studio', 'Lower East Side', 'Lower East Side, Manhattan, NY',
-    'A light-filled painting studio offering guided classes around New York cityscapes.', 'New York City', 'America/New_York'),
+    'A light-filled painting studio offering guided classes around New York cityscapes.', 'New York City', 'America/New_York', 'NY'),
   ('fieldwork-florals', 'Fieldwork Florals', 'Park Slope', 'Park Slope, Brooklyn, NY',
-    'A neighborhood flower workshop working with seasonal stems and local growers.', 'New York City', 'America/New_York'),
+    'A neighborhood flower workshop working with seasonal stems and local growers.', 'New York City', 'America/New_York', 'NY'),
   ('blue-kiln-chicago', 'Blue Kiln Workshop', 'Pilsen', 'Pilsen, Chicago, IL',
-    'A ceramics workshop with long handbuilding tables and a shelf of sample glazes.', 'Chicago', 'America/Chicago'),
+    'A ceramics workshop with long handbuilding tables and a shelf of sample glazes.', 'Chicago', 'America/Chicago', 'IL'),
   ('paper-yard-chicago', 'Paper Yard Print Shop', 'Logan Square', 'Logan Square, Chicago, IL',
-    'A small print shop with a paper drying rack and bench space for cutting stencils.', 'Chicago', 'America/Chicago'),
+    'A small print shop with a paper drying rack and bench space for cutting stencils.', 'Chicago', 'America/Chicago', 'IL'),
   ('shoreline-color-chicago', 'Shoreline Color Room', 'Hyde Park', 'Hyde Park, Chicago, IL',
-    'A painting room for small groups working from reference photographs and still lifes.', 'Chicago', 'America/Chicago'),
+    'A painting room for small groups working from reference photographs and still lifes.', 'Chicago', 'America/Chicago', 'IL'),
   ('mesa-clay-los-angeles', 'Mesa Clay Room', 'Frogtown', 'Frogtown, Los Angeles, CA',
-    'A ceramics room with textured clay samples and shared handbuilding tables.', 'Los Angeles', 'America/Los_Angeles'),
+    'A ceramics room with textured clay samples and shared handbuilding tables.', 'Los Angeles', 'America/Los_Angeles', 'CA'),
   ('loose-thread-los-angeles', 'Loose Thread Workshop', 'Highland Park', 'Highland Park, Los Angeles, CA',
-    'A textiles workshop with frame looms, reclaimed yarn and space for hand stitching.', 'Los Angeles', 'America/Los_Angeles'),
+    'A textiles workshop with frame looms, reclaimed yarn and space for hand stitching.', 'Los Angeles', 'America/Los_Angeles', 'CA'),
   ('wild-stems-los-angeles', 'Wild Stems Workroom', 'Atwater Village', 'Atwater Village, Los Angeles, CA',
-    'A flower workroom offering small classes in fresh and dried arrangements.', 'Los Angeles', 'America/Los_Angeles')
+    'A flower workroom offering small classes in fresh and dried arrangements.', 'Los Angeles', 'America/Los_Angeles', 'CA')
 on conflict (slug) do nothing;
 
 insert into public.class_templates (

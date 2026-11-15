@@ -6,23 +6,35 @@ export const categories = {
   textiles: "Textiles",
   painting: "Painting",
   florals: "Floral design",
+  jewelry: "Jewelry making",
+  woodworking: "Woodworking",
+  cooking: "Cooking and baking",
+  photography: "Photography",
 } as const;
 
 export type Category = keyof typeof categories;
 export type CatalogSession = {
   id: string; slug: string; title: string; category: Category; description: string; included: string;
   experience: string; take_home: string; duration_minutes: number; image_key: string; level: string;
-  token_cost: number; studio_name: string; city: string; neighborhood: string; address: string; timezone: string;
+  token_cost: number; studio_name: string; city: string; state_code: string | null; neighborhood: string; address: string; timezone: string;
   starts_at: Date | string; spots: number; status: string;
 };
 
 const selection = `SELECT s.id, t.slug, t.title, t.category, t.description, t.included, t.experience,
   t.take_home, t.duration_minutes, t.image_key, t.level, t.token_cost, st.name AS studio_name,
-  st.city, st.neighborhood, st.address, st.timezone, s.starts_at, (s.quota - s.booked_count)::int AS spots, s.status
+  st.city, st.state_code, st.neighborhood, st.address, st.timezone, s.starts_at, (s.quota - s.booked_count)::int AS spots, s.status
   FROM public.sessions s JOIN public.class_templates t ON t.id = s.template_id
   JOIN public.studios st ON st.id = t.studio_id`;
 
-export function getSessions(filters: { category?: string; date?: string; maxTokens?: number; slug?: string; city?: string; limit?: number } = {}) {
+export function getSessions(filters: {
+  category?: string;
+  date?: string;
+  maxTokens?: number;
+  slug?: string;
+  city?: string;
+  stateCode?: string;
+  limit?: number;
+} = {}) {
   return query<CatalogSession>(`${selection}
     WHERE s.status = 'published' AND s.starts_at > now()
     AND ($1::text IS NULL OR t.category = $1)
@@ -30,8 +42,9 @@ export function getSessions(filters: { category?: string; date?: string; maxToke
     AND ($3::int IS NULL OR t.token_cost <= $3)
     AND ($4::text IS NULL OR t.slug = $4)
     AND ($5::text IS NULL OR st.city = $5)
-    ORDER BY s.starts_at, s.id LIMIT $6`, [
-      filters.category ?? null, filters.date ?? null, filters.maxTokens ?? null, filters.slug ?? null, filters.city ?? null, filters.limit ?? 60,
+    AND ($6::text IS NULL OR st.state_code = $6)
+    ORDER BY s.starts_at, s.id LIMIT $7`, [
+      filters.category ?? null, filters.date ?? null, filters.maxTokens ?? null, filters.slug ?? null, filters.city ?? null, filters.stateCode ?? null, filters.limit ?? 60,
     ]);
 }
 

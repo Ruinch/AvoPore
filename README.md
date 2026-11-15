@@ -1,6 +1,6 @@
 # AvoPore
 
-AvoPore is a membership for in-person creative workshops. Members use monthly tokens to book classes at independent studios. The demo catalog includes New York City, Chicago, and Los Angeles.
+AvoPore is a membership for in-person creative workshops. Members use monthly tokens to book classes at independent studios. The demo catalog includes a city in each of the 50 U.S. states, with fictional studios and bookable sample sessions.
 
 ## Run locally
 
@@ -17,7 +17,7 @@ Open [http://127.0.0.1:3000](http://127.0.0.1:3000). The local demo includes sam
 
 1. Select **Try the demo** in the header, then **Member demo**.
 2. Open **Membership**, choose a plan, check the consent box, and select **Simulate payment**. If the demo member already has a plan, check their token balance in **My account**.
-3. Open **Workshops**, choose a city and an upcoming date, then book a seat. Dates and times follow the studio's time zone.
+3. Open **Workshops**, choose a state and an upcoming date, then book a seat. Dates and times follow the studio's time zone.
 4. Open **My account** to see the booking, remaining tokens, and expiry dates.
 
 To switch roles, use **My account → Sign out** and return to **Try the demo**.

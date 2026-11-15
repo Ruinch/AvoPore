@@ -49,6 +49,38 @@ export const workshopPhotos = {
     source: "https://commons.wikimedia.org/wiki/File:Florist_cutting_stems_with_floristry_scissors.jpg",
     license: { name: "CC BY 2.0", url: "https://creativecommons.org/licenses/by/2.0/" },
   },
+  jewelry: {
+    label: "Jewelry making",
+    src: "/images/workshop-jewelry.webp",
+    alt: "A jeweler's wooden workbench with hand tools and unfinished pieces",
+    photographer: "Thomas Farley",
+    source: "https://commons.wikimedia.org/wiki/File:Jeweler%27s_Workbench.jpg",
+    license: { name: "CC0 1.0", url: "https://creativecommons.org/publicdomain/zero/1.0/" },
+  },
+  woodworking: {
+    label: "Woodworking",
+    src: "/images/workshop-woodworking.webp",
+    alt: "A woodworker in gloves handles a piece of timber on a workbench",
+    photographer: "Nenad Stojković (Shixart1985)",
+    source: "https://commons.wikimedia.org/wiki/File:Crafting_wooden_pieces_in_a_workshop_during_the_day_with_a_focus_on_skilled_hands_at_work.jpg",
+    license: { name: "CC BY 2.0", url: "https://creativecommons.org/licenses/by/2.0/" },
+  },
+  cooking: {
+    label: "Cooking and baking",
+    src: "/images/workshop-cooking.webp",
+    alt: "A cook divides dough into pieces on a floured work surface",
+    photographer: "Nenad Stojković (Shixart1985)",
+    source: "https://commons.wikimedia.org/wiki/File:Chef_woriking_with_pastry_dough.jpg",
+    license: { name: "CC BY 2.0", url: "https://creativecommons.org/licenses/by/2.0/" },
+  },
+  photography: {
+    label: "Photography",
+    src: "/images/workshop-photography.webp",
+    alt: "A photographer holding and adjusting a film camera",
+    photographer: "Clay Banks",
+    source: "https://unsplash.com/photos/a-person-holding-a-camera-in-their-hands-qYH9j9HMfFk",
+    license: unsplash,
+  },
 };
 
 export function workshopPhoto(key: string) {
