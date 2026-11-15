@@ -1,7 +1,6 @@
 import { Aperture } from "lucide-react";
 import Link from "next/link";
-import { getCurrentUser } from "@/lib/auth";
-import { isLocalDemo } from "@/lib/db";
+import { getCurrentUser, isDemoSignInAvailable } from "@/lib/auth";
 import { SiteNavigation } from "@/components/site-navigation";
 
 export function Wordmark() {
@@ -10,6 +9,7 @@ export function Wordmark() {
 
 export async function SiteHeader() {
   const user = await getCurrentUser();
+  const demo = isDemoSignInAvailable();
   return <header className="site-header">
     <div className="shell nav-inner">
       <Wordmark />
@@ -18,7 +18,7 @@ export async function SiteHeader() {
         {user?.role === "admin" && <Link href="/admin">Admin</Link>}
         {user?.studioId && <Link href="/studio">Studio</Link>}
         {user ? <Link className="button button-secondary nav-button" href="/account">My account</Link>
-          : <><Link href="/login" className="nav-login">Sign in</Link><Link className="button button-primary nav-button" href={isLocalDemo() ? "/login" : "/login?mode=signup"}>{isLocalDemo() ? "Try the demo" : "Join AvoPore"}</Link></>}
+          : <><Link href="/login" className="nav-login">Sign in</Link><Link className="button button-primary nav-button" href={demo ? "/login" : "/login?mode=signup"}>{demo ? "Try the demo" : "Join AvoPore"}</Link></>}
       </div>
     </div>
   </header>;

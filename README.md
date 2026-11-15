@@ -4,15 +4,20 @@
 
 AvoPore gives members monthly tokens they can use to book pottery, cooking, photography, and other classes at independent studios. Studios choose which sessions and how many seats to offer. They can track attendance and see the payout calculated for each attendee.
 
-[Open the live demo](https://avopore.vercel.app/discover?city=chicago) · [View a sample workshop](https://avopore.vercel.app/discover/pinch-pot-planters-chicago)
+[Try the live demo](https://avopore.vercel.app/login) · [View a sample workshop](https://avopore.vercel.app/discover/pinch-pot-planters-chicago)
 
 ## Judge walkthrough
 
-### Browse the live demo
+### Try the member flow online
 
-Open **Workshops**, pick a state, and select **Show workshops**. Open a listing to see its dates, available seats, token price, and cancellation policy. The catalog includes a city in each of the **50 U.S. states** and **nine workshop categories**. It uses fictional studios and sample schedules. You can browse as a guest.
+1. Open the [live demo](https://avopore.vercel.app/login) and choose **Member demo**.
+2. In **Membership**, choose **Studio**, check the consent box, and select **Simulate payment** to add **24 test tokens** at no cost.
+3. In **Workshops**, choose a state, select **Show workshops**, and book an upcoming session.
+4. Open **My account** to see the booking and remaining balance. Cancel a session at least 24 hours before it starts to see its tokens return.
 
-### Try the full booking flow locally
+The [public catalog](https://avopore.vercel.app/discover?city=chicago) uses fictional studios and sample schedules, with a city in each of the **50 U.S. states** and **nine workshop categories**.
+
+### Try studio and admin tools locally
 
 With Node.js 22 or newer, run these commands in the repository root.
 

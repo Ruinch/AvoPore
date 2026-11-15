@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { demoAction, googleAction, loginAction, signupAction } from "@/app/actions";
 import { SubmitButton } from "@/components/submit-button";
-import { isGoogleAuthAvailable } from "@/lib/auth";
+import { isDemoSignInAvailable, isGoogleAuthAvailable } from "@/lib/auth";
 import { loginPath, safeReturnPath } from "@/lib/auth-navigation";
 import { isLocalDemo } from "@/lib/db";
 import { errorMessage } from "@/lib/messages";
@@ -22,9 +22,26 @@ export default async function Login({ searchParams }: { searchParams: Promise<Re
   const error = errorMessage(options.error);
   const destination = safeReturnPath(options.next);
   const next = destination ?? "/account";
-  const demo = isLocalDemo();
+  const localDemo = isLocalDemo();
+  const demo = isDemoSignInAvailable();
+  const availableRoles = localDemo ? demoRoles : demoRoles.filter(({ role }) => role === "member");
+  const demoPanel = demo && <aside className={styles.demo} aria-labelledby="demo-title">
+    <h2 id="demo-title">{localDemo ? "Local demo" : "Try the demo"}</h2>
+    <p>{localDemo ? "Select a role to explore AvoPore." : "Open a demo account to try booking workshops with test tokens."}</p>
+    <ul>
+      {availableRoles.map(({ role, title, description }) => <li key={role}>
+        {localDemo && <p>{description}</p>}
+        <form action={demoAction}>
+          <input type="hidden" name="role" value={role} />
+          <input type="hidden" name="next" value={destination ?? "/discover"} />
+          <SubmitButton secondary={localDemo}>{title} <ArrowUpRight size={14} aria-hidden /></SubmitButton>
+        </form>
+      </li>)}
+    </ul>
+  </aside>;
 
   return <section className={"shell " + styles.login} data-demo={demo} aria-labelledby="sign-in-title">
+    {!localDemo && demoPanel}
     <div className={styles.account}>
       <header className={styles.header}>
         <h1 className={styles.title} id="sign-in-title">{signup ? "Create an account" : "Sign in"}</h1>
@@ -58,19 +75,6 @@ export default async function Login({ searchParams }: { searchParams: Promise<Re
       </p>
     </div>
 
-    {demo && <aside className={styles.demo} aria-labelledby="local-demo-title">
-      <h2 id="local-demo-title">Local demo</h2>
-      <p>Select a role to explore AvoPore.</p>
-      <ul>
-        {demoRoles.map(({ role, title, description }) => <li key={role}>
-          <p>{description}</p>
-          <form action={demoAction}>
-            <input type="hidden" name="role" value={role} />
-            <input type="hidden" name="next" value={destination ?? "/discover"} />
-            <SubmitButton secondary>{title} <ArrowUpRight size={14} aria-hidden /></SubmitButton>
-          </form>
-        </li>)}
-      </ul>
-    </aside>}
+    {localDemo && demoPanel}
   </section>;
 }
